@@ -1,6 +1,9 @@
+import sys
 import numpy as np
 from time import sleep
 import random
+import tkinter as tk
+from tkinter import messagebox
 
 
 def make_field(f_size):
@@ -30,7 +33,7 @@ class OthelloBoard:
         if self.field[x, y] == 0:
             for i in range(3):
                 for j in range(3):
-                    if i == j == 2:
+                    if i == j == 1:
                         continue
                     check_x = x
                     check_y = y
@@ -71,7 +74,7 @@ class OthelloBoard:
                 print("あなたの置ける場所がありません。")
             else:
                 print("相手の置ける場所がありません。")
-            self.turn_attack, self.turn_target = self.turn_target, self.turn_attack
+            # self.turn_attack, self.turn_target = self.turn_target, self.turn_attack
 
     def put_stone(self, x, y):
         attack_list = self.attack_check(put=True)
@@ -88,9 +91,10 @@ class OthelloBoard:
                         continue
                     else:
                         break
-            self.turn_attack, self.turn_target = self.turn_target, self.turn_attack
+            # self.turn_attack, self.turn_target = self.turn_target, self.turn_attack
 
 
+"""
 def game(sleep_time=1):
     board = OthelloBoard()
     user, com, empty = board.count()
@@ -136,6 +140,108 @@ def game(sleep_time=1):
         else:
             print("引き分けです")
             return -1
+# game()
+"""
 
 
-game()
+def judgement(user, com):
+    if user > com:
+        messagebox.showinfo("COM", "あなたの勝ちです！！")
+    elif user < com:
+        messagebox.showinfo("COM", "あなたの負けです")
+    else:
+        messagebox.showinfo("COM", "引き分けです")
+    root.destroy()
+    sys.exit()
+
+
+def click_btn(btn):
+    global board
+    select_x, select_y = map(int, list(btn.widget._name))
+    user_put = [select_y + 1, select_x + 1]
+    choices = board.attack_check()
+    if user_put in choices:
+        board.put_stone(user_put[0], user_put[1])
+        field_update()
+    else:
+        messagebox.showinfo("COM", "そこには置けません")
+        return
+    (user, com, last) = board.count()
+    label_tex = "USER:{} COM:{} LAST{}".format(user, com, last)
+    info_label = tk.Label(root, text=label_tex, font=("ＭＳゴシック", "15", "bold"))
+    info_label.place(x=25, y=25, width=400, height=50)
+
+    if not com or not last:
+        judgement(user, com)
+
+    board.turn_attack, board.turn_target = board.turn_target, board.turn_attack
+
+    end_flag = False
+
+    while board.turn_attack == 2:
+        choices = board.attack_check()
+        if choices:
+            com_put = random.choice(choices)
+            messagebox.showinfo("COM", "{}{}に置きます".format(com_put[0], com_put[1]))
+            board.put_stone(com_put[0], com_put[1])
+            field_update()
+        else:
+            if end_flag:
+                judgement(user, com)
+            end_flag = True
+            messagebox.showinfo("COM", "置けるところがありません")
+            field_update()
+        (user, com, last) = board.count()
+        label_tex = "USER:{} COM:{} LAST{}".format(user, com, last)
+        info_label = tk.Label(root, text=label_tex, font=("ＭＳゴシック", "15", "bold"))
+        info_label.place(x=25, y=25, width=400, height=50)
+
+        if not user or not last:
+            judgement(user, com)
+
+        board.turn_attack, board.turn_target = board.turn_target, board.turn_attack
+
+        choices = board.attack_check()
+        if not choices:
+            if end_flag:
+                judgement(user, com)
+            end_flag = True
+            messagebox.showinfo("COM", "あなたの置ける場所がありません")
+            board.turn_attack, board.turn_target = board.turn_target, board.turn_attack
+
+
+def field_update():
+    global btns
+    btns = []
+    for x in range(8):
+        for y in range(8):
+            btn_place = str(x) + str(y)
+            if board.field[y + 1][x + 1] == 1:
+                btns.append(tk.Button(root, text="●", font=("ＭＳゴシック", "30"),
+                                      fg="#001100", anchor="center", name=btn_place))
+            elif board.field[y + 1][x + 1] == 2:
+                btns.append(tk.Button(root, text="●", font=("ＭＳゴシック", "30"),
+                                      fg="#FFDDFF", anchor="center", name=btn_place))
+            else:
+                btns.append(tk.Button(root, text="", name=btn_place))
+            btns[x * 8 + y].place(x=x * 50 + 25, y=y * 50 + 100, width=50, height=50)
+            btns[x * 8 + y].configure(bg="#00cc00")
+
+
+board = OthelloBoard()
+(user, com, last) = board.count()
+
+root = tk.Tk()
+root.configure(bg="#555555")
+root.title("オセロゲーム")
+root.geometry("450x500")
+
+field_update()
+
+label_tex = "USER:{} COM:{} LAST{}".format(user, com, last)
+info_label = tk.Label(root, text=label_tex, font=("ＭＳゴシック", "15", "bold"))
+info_label.place(x=25, y=25, width=400, height=50)
+
+root.bind("<1>", click_btn)
+
+root.mainloop()
